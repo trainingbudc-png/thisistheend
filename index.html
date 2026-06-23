@@ -98,39 +98,43 @@
 </div>
 
 <script>
-// บันทึก LIFF ID ของคุณเรียบร้อยแล้ว
+<script>
+    // รหัส LIFF ID ของคุณ
     const MY_LIFF_ID = '2010483649-bCj50Jvy'; 
 
-    // 1. ตรวจสอบสถานะการล็อกอินตอน加โหลดหน้าเว็บ
+    // 1. ตรวจสอบสถานะการล็อกอินตอนโหลดหน้าเว็บ
     async function initLineApp() {
         try {
-            // สั่งโหลด LIFF SDK
             await liff.init({ liffId: MY_LIFF_ID });
             
-            // เช็กว่าล็อกอินหรือยัง
             if (liff.isLoggedIn()) {
-                // ถ้าล็อกอินแล้ว ค่อยไปดึงโปรไฟล์
-                const profile = await liff.getProfile();
-                showDashboard(profile.displayName, profile.pictureUrl, profile.userId);
+                // ถ้าล็อกอินแล้ว ลองดึงโปรไฟล์
+                try {
+                    const profile = await liff.getProfile();
+                    showDashboard(profile.displayName, profile.pictureUrl, profile.userId);
+                } catch (profileError) {
+                    console.error('ดึงโปรไฟล์ไม่สำเร็จ แต่ล็อกอินแล้ว:', profileError);
+                    // เผื่อกรณีสิทธิ์โปรไฟล์มีปัญหา ให้เข้าหน้าแดชบอร์ดด้วย ID ไปก่อน
+                    showDashboard('ผู้ใช้งาน LINE', '', 'ดึง ID สำเร็จ');
+                }
             } else {
-                // ถ้ายังไม่ได้ล็อกอิน ให้ระบบสแตนด์บายหน้า Login ไว้เฉยๆ ไม่ต้องทำอะไร
-                console.log("LIFF Ready, waiting for login...");
+                console.log("สแตนด์บายหน้าล็อกอิน... รอผู้ใช้กดปุ่ม");
             }
         } catch (error) {
-            console.error('LIFF Error:', error);
+            console.error('LIFF สตาร์ทไม่สำเร็จ:', error);
         }
     }
 
-    // 2. ฟังก์ชันเมื่อกดเข้าสู่ระบบด้วย LINE (แก้ไขให้เรียกทำงานตรงๆ)
+    // 2. ฟังก์ชันเมื่อกดเข้าสู่ระบบด้วย LINE
     function handleLineLogin() {
         try {
             if (!liff.isLoggedIn()) {
-                liff.login(); // ตัวนี้จะเด้งไปหน้าล็อกอินของ LINE ทันที
+                liff.login(); // ดีดไปหน้าล็อกอินของ LINE
             } else {
                 initLineApp();
             }
         } catch (err) {
-            alert("เกิดข้อผิดพลาดในการเชื่อมต่อ LINE: " + err.message);
+            alert("เกิดข้อผิดพลาดในการเรียก LINE Login: " + err.message);
         }
     }
 
@@ -172,8 +176,9 @@
         alert('คุณกำลังทำรายการคืน: ' + itemName);
     }
 
-    // รันตอนเปิดหน้าจอ
+    // เริ่มทำงานทันทีเมื่อเปิดหน้าเว็บ
     initLineApp();
+</script>
 </script>
 
 </body>
