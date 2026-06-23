@@ -3,76 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบยืม-คืน iPad</title>
+    <title>ระบบยืม-คืน iPad - ศูนย์แพทย์ฯ</title>
     
+    <!-- โหลด LINE SDK ตัวล่าสุด -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #e0f2fe 0%, #e8f5e9 100%); margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
         
-        /* เปลี่ยนพื้นหลังเป็นสีฟ้าอ่อนพาสเทล ดูสบายตา */
-        body { background-color: #f0v7f9; background: linear-gradient(135deg, #e0f2fe 0%, #e8f5e9 100%); margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
-        
-        /* --- สไตล์ของหน้าจอ ล็อกอิน --- */
-        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 123, 255, 0.05); width: 100%; max-width: 400px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.8); }
-        h2 { margin-top: 0; margin-bottom: 8px; color: #0f172a; font-size: 26px; font-weight: 700; }
+        /* --- สไตล์หน้าล็อกอิน --- */
+        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 123, 255, 0.05); width: 100%; max-width: 400px; text-align: center; }
+        h2 { margin-top: 0; margin-bottom: 8px; color: #0f172a; font-size: 24px; font-weight: 700; }
         .subtitle { color: #64748b; font-size: 14px; margin-bottom: 32px; }
         .input-group { margin-bottom: 20px; text-align: left; }
         label { display: block; margin-bottom: 8px; color: #334155; font-size: 14px; font-weight: 600; }
-        
-        /* อินพุตขอบมน ธีมฟ้า */
-        input { width: 100%; padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 16px; outline: none; transition: 0.2s; background-color: #f8fafc; }
-        input:focus { border-color: #0ea5e9; background-color: #fff; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15); }
-        
-        /* ปุ่มส่งข้อมูล สีฟ้าสดใส */
-        .btn-submit { width: 100%; padding: 14px; background-color: #0ea5e9; color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.2s; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2); }
-        .btn-submit:hover { background-color: #0284c7; transform: translateY(-1px); }
-        
+        input[type="text"], input[type="password"], input[type="number"], input[type="date"], select, textarea { width: 100%; padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 15px; outline: none; background-color: #f8fafc; transition: 0.2s; }
+        input:focus, select:focus, textarea:focus { border-color: #0ea5e9; background-color: #fff; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15); }
+        .btn-submit { width: 100%; padding: 14px; background-color: #0ea5e9; color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 10px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2); }
+        .btn-submit:hover { background-color: #0284c7; }
         .divider { margin: 24px 0; color: #94a3b8; font-size: 14px; display: flex; align-items: center; }
         .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; margin: 0 12px; }
-        
-        /* ปุ่ม LINE สีเขียวมิ้นท์/แบรนด์ดั้งเดิม เพื่อความคุ้นชิน แต่ปรับให้เข้ากับธีม */
-        .btn-line { width: 100%; padding: 14px; background-color: #06C755; color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; box-shadow: 0 4px 12px rgba(6, 199, 85, 0.2); }
-        .btn-line:hover { background-color: #05b04b; transform: translateY(-1px); }
+        .btn-line { width: 100%; padding: 14px; background-color: #06C755; color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(6, 199, 85, 0.2); }
+        .btn-line:hover { background-color: #05b04b; }
         .line-icon { width: 20px; height: 20px; fill: white; }
 
-        /* --- สไตล์ของหน้าจอหลัก ยืม-คืน (หลังล็อกอินสำเร็จ) --- */
-        .dashboard-card { background: white; padding: 35px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); width: 100%; max-width: 600px; display: none; border: 1px solid rgba(255, 255, 255, 0.8); }
-        
-        /* โปรไฟล์ผู้ใช้สไตล์มินิมอล ฟ้า-เขียว */
+        /* --- สไตล์หน้า Dashboard หลัก --- */
+        .dashboard-card { background: white; padding: 35px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); width: 100%; max-width: 950px; display: none; }
         .user-profile { display: flex; align-items: center; gap: 15px; background: linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 100%); padding: 16px; border-radius: 16px; margin-bottom: 30px; border: 1px solid #e2e8f0; }
         .profile-img { width: 60px; height: 60px; border-radius: 50%; border: 3px solid #0ea5e9; }
-        .user-details { text-align: left; }
         .user-name { font-weight: 700; font-size: 18px; color: #1e293b; }
-        .user-id { font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; margin-top: 2px; }
-        .btn-logout { background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: auto; transition: 0.2s; }
-        .btn-logout:hover { background: #dc2626; }
-        
-        h3 { color: #1e293b; margin-bottom: 20px; font-size: 20px; text-align: left; }
-        .ipad-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
-        @media (max-width: 480px) { .ipad-list { grid-template-columns: 1fr; } }
-        
-        /* การ์ดรายการอุปกรณ์ */
-        .ipad-item { border: 1px solid #e2e8f0; padding: 20px; border-radius: 16px; position: relative; background-color: #fff; transition: 0.2s; }
-        .ipad-item:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.03); }
-        .ipad-title { color: #334155; font-size: 16px; font-weight: 600; display: block; margin-bottom: 4px; }
-        
-        /* Badge สถานะ ฟ้า-เขียว */
-        .status-badge { position: absolute; top: 20px; right: 20px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-        .status-available { background: #dcfce7; color: #15803d; }
-        .status-borrowed { background: #fee2e2; color: #b91c1c; }
-        
-        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.2s; font-size: 14px; }
-        /* ปุ่มยืมสีเขียวมิ้นท์ ขับธีมสะอาดตา */
-        .btn-borrow { background: #10b981; color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); }
-        .btn-borrow:hover { background: #059669; }
-        /* ปุ่มคืนสีฟ้าคราม */
-        .btn-return { background: #0284c7; color: white; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2); }
-        .btn-return:hover { background: #0369a1; }
+        .user-id { font-size: 12px; color: #64748b; }
+        .btn-logout { background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: auto; }
+
+        /* --- สไตล์หน้าขอยืม (User) --- */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+        .form-notice { color: #dc2626; font-size: 14px; font-weight: bold; margin-bottom: 20px; text-align: left; }
+        .btn-action-submit { background-color: #0ea5e9; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2); }
+        .btn-action-submit:hover { background-color: #0284c7; }
+
+        /* --- สไตล์หน้าแอดมิน (Admin) --- */
+        .admin-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; margin-top: 15px; }
+        .admin-table th { background-color: #f1f5f9; color: #334155; padding: 12px; border: 1px solid #e2e8f0; font-weight: 600; }
+        .admin-table td { padding: 12px; border: 1px solid #e2e8f0; vertical-align: top; }
+        .badge-status { background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 12px; }
+        .btn-prepare { background: #06C755; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 6px; width: 100%; font-size: 13px; text-align: center; display: block; }
+        .btn-prepare:hover { background: #05b04b; }
+        .btn-reject { background: white; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 13px; }
+        .btn-reject:hover { background: #fef2f2; }
+
+        /* --- สไตล์ป๊อปอัพ Check List iPad --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; text-align: left; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .checklist-group { margin: 15px 0; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .checklist-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 14px; cursor: pointer; color: #334155; }
+        .checklist-item:last-child { margin-bottom: 0; }
+        .checklist-item input { width: 18px; height: 18px; cursor: pointer; }
+        .btn-modal-confirm { width: 100%; padding: 12px; background: #06C755; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 10px; box-shadow: 0 4px 10px rgba(6, 199, 85, 0.2); }
+        .btn-modal-confirm:hover { background: #05b04b; }
+        .btn-modal-close { width: 100%; padding: 10px; background: #cbd5e1; color: #334155; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; margin-top: 8px; }
     </style>
 </head>
 <body>
 
+<!-- ================= หน้าจอที่ 1: ล็อกอิน ================= -->
 <div class="login-card" id="login-page">
     <h2>ระบบยืม-คืน iPad</h2>
     <div class="subtitle">กรุณาเลือกช่องทางเข้าสู่ระบบด้านล่าง</div>
@@ -92,96 +88,296 @@
     <div class="divider">หรือ</div>
 
     <button class="btn-line" onclick="handleLineLogin()">
-        <svg class="line-icon" viewBox="0 0 24 24"><path d="M24 10.304c0-5.131-5.383-9.304-12-9.304s-12 4.173-12 9.304c0 4.594 4.305 8.435 10.119 9.18 0.394 0.085 0.932 0.261 1.066 0.6l0.383 1.644c0.116 0.501 0.45 0.434 0.45 0.434s0.413-0.279 0.443-0.453c0.068-0.39 0.438-2.519 0.438-2.519 1.226-0.12 2.39-0.443 3.447-0.954 3.013-1.455 5.654-4.52 5.654-8.936zm-15.54 2.871h-1.96c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.596 0.268 0.596 0.596v3.974h1.364c0.33 0 0.597 0.268 0.597 0.597 0 0.328-0.267 0.596-0.597 0.596zm3.398-0.597c0 0.329-0.268 0.597-0.597 0.597s-0.268-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.597 0.268 0.597 0.596v4.57zm5.228 0c0 0.161-0.064 0.315-0.178 0.428-0.113 0.113-0.268 0.169-0.419 0.169h-1.96c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.596 0.268 0.596 0.596v3.974h1.364c0.33 0 0.597 0.268 0.597 0.597zm3.328-1.558c0 0.329-0.268 0.596-0.597 0.596h-1.364v1.01h1.364c0.33 0 0.597 0.268 0.597 0.597s-0.268 0.597-0.597 0.597h-1.961c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596h1.961c0.33 0 0.597 0.268 0.597 0.596s-0.268 0.597-0.597 0.597h-1.364v0.965h1.364c0.33 0 0.597 0.268 0.597 0.596z"/></svg>
+        <svg class="line-icon" viewBox="0 0 24 24"><path d="M24 10.304c0-5.131-5.383-9.304-12-9.304s-12 4.173-12 9.304c0 4.594 4.305 8.435 10.119 9.18 0.394 0.085 0.932 0.261 1.066 0.6 l0.383 1.644c0.116 0.501 0.45 0.434 0.45 0.434s0.413-0.279 0.443-0.453c0.068-0.39 0.438-2.519 0.438-2.519 1.226-0.12 2.39-0.443 3.447-0.954 3.013-1.455 5.654-4.52 5.654-8.936zm-15.54 2.871h-1.96c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.596 0.268 0.596 0.596v3.974h1.364c0.33 0 0.597 0.268 0.597 0.597 0 0.328-0.267 0.596-0.597 0.596zm3.398-0.597c0 0.329-0.268 0.597-0.597 0.597s-0.268-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.597 0.268 0.597 0.596v4.57zm5.228 0c0 0.161-0.064 0.315-0.178 0.428-0.113 0.113-0.268 0.169-0.419 0.169h-1.96c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.596 0.268 0.596 0.596v3.974h1.364c0.33 0 0.597 0.268 0.597 0.597zm3.328-1.558c0 0.329-0.268 0.596-0.597 0.596h-1.364v1.01h1.364c0.33 0 0.597 0.268 0.597 0.597s-0.268 0.597-0.597 0.597h-1.961c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596h1.961c0.33 0 0.597 0.268 0.597 0.596s-0.268 0.597-0.597 0.597h-1.364v0.965h1.364c0.33 0 0.597 0.268 0.597 0.596z"/></svg>
         เข้าสู่ระบบด้วย LINE
     </button>
 </div>
 
+<!-- ================= หน้าจอที่ 2: ระบบจัดการหลัก ================= -->
 <div class="dashboard-card" id="dashboard-page">
+    <!-- ส่วนข้อมูลผู้ล็อกอิน -->
     <div class="user-profile">
         <img id="u-img" class="profile-img" src="https://via.placeholder.com/60" alt="User Image">
-        <div class="user-details">
+        <div class="user-details" style="text-align: left;">
             <div class="user-name" id="u-name">ผู้ใช้งานทั่วไป</div>
-            <div class="user-id" id="u-id">LINE ID: -</div>
+            <div id="u-role" style="font-size: 13px; font-weight: bold; color: #0ea5e9; margin-top: 2px;">สถานะ: กำลังตรวจสอบ...</div>
+            <div class="user-id" id="u-id" style="font-size: 11px; margin-top: 2px;">LINE ID: -</div>
         </div>
         <button class="btn-logout" onclick="handleLogout()">ออกจากระบบ</button>
     </div>
 
-    <h3>รายการ iPad ในระบบ</h3>
-    
-    <div class="ipad-list">
-        <div class="ipad-item">
-            <span class="ipad-title">iPad Air 5 (เครื่องที่ 1)</span>
-            <div class="status-badge status-available">ว่าง</div>
-            <button class="btn-action btn-borrow" onclick="borrowItem('เครื่องที่ 1')">กดคลิกยืม</button>
-        </div>
-        <div class="ipad-item">
-            <span class="ipad-title">iPad Pro (เครื่องที่ 2)</span>
-            <div class="status-badge status-borrowed">ถูกยืมแล้ว</div>
-            <button class="btn-action btn-return" onclick="returnItem('เครื่องที่ 2')">กดคลิกคืน</button>
-        </div>
+    <!-- 2.1: ฟอร์มส่งคำขอขอยืม (ฝั่ง USER ทั่วไป จะเห็นส่วนนี้เท่านั้น) -->
+    <div id="user-section" style="display: none;">
+        <h2 style="text-align: left; margin-bottom: 5px; color: #0ea5e9;">การยืม-คืนอุปกรณ์ 📚</h2>
+        <div class="form-notice">*** iPad ต้องยืมล่วงหน้า 3 วัน และ เมื่อใช้เสร็จต้องตรวจเครื่องคืน ภายใน 24 ชม. (วันทำการ) หลังใช้เสร็จ</div>
+        
+        <form id="borrowForm" onsubmit="submitBorrowRequest(event)">
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>คลัง</label>
+                    <input type="text" value="ศูนย์แพทย์ฯ" readonly style="font-weight: bold; color: #475569; background-color: #e2e8f0;">
+                </div>
+                <div class="input-group">
+                    <label>ประเภทอุปกรณ์</label>
+                    <select id="device_type" required>
+                        <option value="" disabled selected>เลือกประเภทอุปกรณ์</option>
+                        <option value="iPad Air">iPad Air</option>
+                        <option value="Apple Pencil Pro">Apple Pencil Pro</option>
+                        <option value="iPad">iPad</option>
+                        <option value="Apple Pencil">Apple Pencil</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>จำนวน</label>
+                    <input type="number" id="borrow_qty" value="1" min="1" required>
+                </div>
+                <div class="input-group">
+                    <label>วันที่ใช้</label>
+                    <input type="date" id="start_date" required>
+                </div>
+                <div class="input-group">
+                    <label>วันที่จะคืน</label>
+                    <input type="date" id="end_date" required>
+                </div>
+                <div class="input-group">
+                    <label>รายละเอียด</label>
+                    <textarea id="borrow_detail" rows="2" placeholder="ระบุรายละเอียด เช่น สอบ mcq" required></textarea>
+                </div>
+                <div class="input-group" style="display: flex; align-items: center; gap: 10px; margin-top: 20px;">
+                    <input type="checkbox" id="is_outsider" style="width: 20px; height: 20px; cursor: pointer;">
+                    <label style="margin-bottom: 0; cursor: pointer;" for="is_outsider">คนนอกยืม</label>
+                </div>
+            </div>
+            <button type="submit" class="btn-action-submit">
+                <svg style="width:20px;height:20px" viewBox="0 0 24 24"><path fill="currentColor" d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z" /></svg>
+                ขอเบิก
+            </button>
+        </form>
+    </div>
+
+    <!-- 2.2: แผงควบคุมรายการคำขอ (ฝั่ง ADMIN จะเห็นส่วนนี้แทนปุ่มยืมเดิมทั้งหมด) -->
+    <div id="admin-section" style="display: none;">
+        <h3 style="text-align: left; color:#1e293b; margin-bottom: 5px;">ตารางจัดการคำขอยืมอุปกรณ์</h3>
+        <p style="text-align: left; color:#64748b; font-size:14px; margin-bottom:20px;">แอดมินสามารถตรวจสอบคำขอ กดเตรียมอุปกรณ์ และยืนยันการจ่ายเครื่องได้จากตารางด้านล่างนี้</p>
+        
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">#</th>
+                    <th style="width: 35%;">รายการขอยืม</th>
+                    <th style="width: 20%;">ช่วงเวลาที่ขอใช้</th>
+                    <th style="width: 20%;">ผู้ยืม/บันทึก</th>
+                    <th style="width: 17%;">สถานะ</th>
+                    <th style="width: 15%;">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody id="admin-table-body">
+                <!-- รายการจำลองข้อมูลทดสอบเหมือนในรูปตัวอย่าง -->
+                <tr>
+                    <td style="font-weight: bold; color:#0ea5e9;">6159</td>
+                    <td>
+                        <strong>Apple Pencil <span style="background:#ef4444; color:white; font-size:11px; padding:2px 6px; border-radius:4px;">x2</span></strong><br>
+                        <span style="color:#64748b; font-size:12px;">รายละเอียด: สอบ mcq</span><br>
+                        <div id="assigned-device-6159" style="margin-top:8px; background: #f0fdf4; border-radius:6px; padding: 4px; font-weight:bold; color:#10b981; font-size:12px;"></div>
+                    </td>
+                    <td>
+                        📅 ใช้: 26 มิ.ย. 2569<br>
+                        🔄 คืน: 26 มิ.ย. 2569
+                    </td>
+                    <td>
+                        <strong>พรรณนิภา แก่นมณี</strong><br>
+                        <span style="color:#94a3b8; font-size:11px;">23 มิ.ย. 2569 13:06 น.</span>
+                    </td>
+                    <td><span class="badge-status" id="status-text-6159">รอรับของ</span></td>
+                    <td>
+                        <button class="btn-prepare" onclick="openChecklistModal('6159', 'พรรณนิภา แก่นมณี', 'Apple Pencil', 2)">[เตรียมอุปกรณ์]</button>
+                        <button class="btn-reject" onclick="alert('ปฏิเสธคำขอเรียบร้อย')">ปฏิเสธ</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ================= 3: ป๊อปอัพ Check List iPad (ฝั่ง Admin) ================= -->
+<div class="modal" id="checklist-modal">
+    <div class="modal-content">
+        <div class="modal-title">1. [ ผู้เตรียมเครื่อง ] Check List iPad</div>
+        
+        <p style="font-size:14px; margin: 5px 0;"><strong>รายการคำขอที่:</strong> <span id="md-job-id" style="color:#0ea5e9; font-weight:bold;">-</span></p>
+        <p style="font-size:14px; margin: 5px 0;"><strong>ผู้เตรียมเครื่อง (Admin):</strong> <span id="md-admin-name" style="color:#334155;">-</span></p>
+        <p style="font-size:14px; margin: 5px 0;"><strong>ผู้รับเครื่อง (User):</strong> <span id="md-user-name" style="color:#334155; font-weight:bold;">-</span></p>
+        
+        <!-- พื้นที่สำหรับสร้างกล่องเช็กลิสต์แยกรายเครื่องอัตโนมัติด้วย JavaScript -->
+        <div id="dynamic-checklist-container"></div>
+
+        <button class="btn-modal-confirm" onclick="confirmAndGiveItem()">ยืนยันความพร้อมและ [ให้ยืม]</button>
+        <button class="btn-modal-close" onclick="closeChecklistModal()">ยกเลิก</button>
     </div>
 </div>
 
 <script>
-    // รหัส LIFF ID ตัวใหม่ล่าสุดของคุณ
     const MY_LIFF_ID = '2010484951-KHRdqAgy'; 
+    let currentAdminName = ''; 
+    let activeJobId = '';
 
-    // ฟังก์ชันเริ่มระบบและตรวจสอบประวัติ LINE
+    // เริ่มต้นระบบตรวจสอบ LINE LIFF
     async function startLiff() {
         try {
             await liff.init({ liffId: MY_LIFF_ID });
             if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
-                showDashboard(profile.displayName, profile.pictureUrl, profile.userId);
+                showDashboard(profile.displayName, profile.pictureUrl, profile.userId, 'user');
             }
         } catch (error) {
-            console.error('เกิดข้อผิดพลาดในการเปิดระบบ LINE:', error);
+            console.error('LIFF Init Error:', error);
         }
     }
 
-    // ฟังก์ชันเมื่อกดปุ่มล็อกอินผ่าน LINE
     function handleLineLogin() {
-        if (!liff.isLoggedIn()) {
-            liff.login(); 
-        }
+        if (!liff.isLoggedIn()) { liff.login(); }
     }
 
-    // ฟังก์ชันล็อกอินแบบปกติ (Username / Password)
+    // ล็อกอินฝั่งแอดมินด้วยรหัสผ่าน
     function handleNormalLogin(event) {
         event.preventDefault();
         const user = document.getElementById('username').value;
         const pass = document.getElementById('password').value;
         
         if (user === 'admin' && pass === '1234') {
-            showDashboard('Admin (ระบบทั่วไป)', 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', 'ไม่ได้ใช้งานผ่าน LINE');
+            currentAdminName = 'แอดมินศูนย์แพทย์ฯ (Admin)';
+            showDashboard(currentAdminName, 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', 'SYSTEM_ADMIN_ACCOUNT', 'admin');
         } else {
             alert('Username หรือ Password ไม่ถูกต้อง!');
         }
     }
 
-    // ฟังก์ชันสำหรับสลับหน้าจอไปที่หน้าแสดงรายการ iPad
-    function showDashboard(name, imgUrl, userId) {
+    // สลับหน้าจอและแยกบทบาทเมนู
+    function showDashboard(name, imgUrl, userId, role) {
         document.getElementById('login-page').style.display = 'none';
         document.getElementById('dashboard-page').style.display = 'block';
         
         document.getElementById('u-name').innerText = name;
-        document.getElementById('u-img').src = imgUrl || 'https://via.placeholder.com/60';
+        document.getElementById('u-img').src = imgUrl;
         document.getElementById('u-id').innerText = 'ID: ' + userId;
+        
+        if (role === 'admin') {
+            document.getElementById('u-role').innerText = 'สถานะ: ผู้ดูแลระบบ (Admin)';
+            document.getElementById('u-role').style.color = '#0ea5e9';
+            document.getElementById('admin-section').style.display = 'block';
+            document.getElementById('user-section').style.display = 'none';
+        } else {
+            document.getElementById('u-role').innerText = 'สถานะ: ผู้ยืม (User)';
+            document.getElementById('u-role').style.color = '#10b981';
+            document.getElementById('user-section').style.display = 'block';
+            document.getElementById('admin-section').style.display = 'none';
+        }
     }
 
-    // ฟังก์ชันออกจากระบบ
-    function handleLogout() {
-        if (liff.isLoggedIn()) {
-            liff.logout();
+    // ผู้ยืมส่งฟอร์มขอเบิก
+    function submitBorrowRequest(event) {
+        event.preventDefault();
+        alert('ส่งคำขอเบิกอุปกรณ์เข้าสู่ระบบสำเร็จ! (ขั้นต่อไปข้อมูลนี้จะวิ่งไปที่ฐานข้อมูลของคุณ)');
+        document.getElementById('borrowForm').reset();
+    }
+
+    // --- ฟังก์ชันเปิดหน้าเช็กลิสต์อุปกรณ์แยกรายชิ้น [ฝั่งแอดมิน] ---
+    function openChecklistModal(jobId, userName, deviceName, qty) {
+        activeJobId = jobId;
+        document.getElementById('md-job-id').innerText = '#' + jobId;
+        document.getElementById('md-admin-name').innerText = currentAdminName || 'แอดมินระบบ';
+        document.getElementById('md-user-name').innerText = userName;
+        
+        const container = document.getElementById('dynamic-checklist-container');
+        container.innerHTML = ''; // ล้างค่าเก่า
+        
+        // วนลูปสร้างกล่องเช็กลิสต์แยกทีละชิ้นตามจำนวนจริง (qty)
+        for (let i = 1; i <= qty; i++) {
+            const itemBox = document.createElement('div');
+            itemBox.className = 'checklist-group';
+            itemBox.style.borderLeft = '4px solid #0ea5e9';
+            
+            // ปรับ Dropdown ให้สอดคล้องกับประเภทของที่ยืม
+            let optionsHtml = '';
+            if (deviceName.includes('Pencil')) {
+                optionsHtml = `
+                    <option value="Apple Pencil - แท่งหมายเลข 0${i}">Apple Pencil - แท่งหมายเลข 0${i}</option>
+                    <option value="Apple Pencil - แท่งหมายเลข 0${i+2}">Apple Pencil - แท่งหมายเลข 0${i+2}</option>
+                `;
+            } else {
+                optionsHtml = `
+                    <option value="iPad Air - เครื่องหมายเลข 0${i}">iPad Air - เครื่องหมายเลข 0${i}</option>
+                    <option value="iPad Air - เครื่องหมายเลข 0${i+2}">iPad Air - เครื่องหมายเลข 0${i+2}</option>
+                `;
+            }
+
+            itemBox.innerHTML = `
+                <div style="font-weight: bold; color: #0f172a; font-size: 14px; margin-bottom: 8px;">
+                    📦 ชิ้นที่ ${i}: ของรายการ ${deviceName}
+                </div>
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <label style="font-size:12px; color:#64748b;">ระบุเลขอุปกรณ์:</label>
+                    <select class="md-device-select-item" style="padding: 8px 12px; font-size:14px;">
+                        ${optionsHtml}
+                    </select>
+                </div>
+                <div style="font-size:12px; font-weight:bold; color:#475569; margin-bottom:8px;">รายการตรวจสอบความสะอาดข้อมูลก่อนให้ยืม:</div>
+                <label class="checklist-item"><input type="checkbox" class="chk-clear-${i}"> Google Drive (Log out แล้ว)</label>
+                <label class="checklist-item"><input type="checkbox" class="chk-clear-${i}"> Files (ลบไฟล์หมดแล้ว)</label>
+                <label class="checklist-item"><input type="checkbox" class="chk-clear-${i}"> รูปภาพ (ไม่มีรูปค้าง)</label>
+                <label class="checklist-item"><input type="checkbox" class="chk-clear-${i}"> Safari (ล้างประวัติการใช้งานแล้ว)</label>
+            `;
+            container.appendChild(itemBox);
         }
+        
+        container.setAttribute('data-qty', qty);
+        document.getElementById('checklist-modal').style.display = 'flex';
+    }
+
+    function closeChecklistModal() {
+        document.getElementById('checklist-modal').style.display = 'none';
+    }
+
+    // แอดมินกดยืนยันการเช็กเครื่องทั้งหมดและอนุมัติปล่อยเครื่อง
+    function confirmAndGiveItem() {
+        const container = document.getElementById('dynamic-checklist-container');
+        const qty = parseInt(container.getAttribute('data-qty'));
+        let chosenDevices = [];
+        
+        // วนเช็กCheckbox ทุกเครื่องว่าติ๊กครบไหม
+        for (let i = 1; i <= qty; i++) {
+            const checkboxes = document.querySelectorAll(`.chk-clear-${i}`);
+            let allChecked = true;
+            checkboxes.forEach(chk => { if (!chk.checked) allChecked = false; });
+            
+            if (!allChecked) {
+                alert(`❌ ไม่สามารถกดจ่ายได้! กรุณาตรวจเช็กและติ๊กยืนยันของ [ชิ้นที่ ${i}] ให้ครบทั้ง 4 หัวข้อครับ`);
+                return;
+            }
+        }
+        
+        // เก็บรวบรวมเลขอุปกรณ์ที่แอดมินเลือก
+        const selects = document.querySelectorAll('.md-device-select-item');
+        selects.forEach(sel => chosenDevices.push(sel.value));
+        
+        // อัปเดตตารางสรุปผลหน้าบ้านแอดมิน
+        document.getElementById('assigned-device-' + activeJobId).innerHTML = `
+            📌 <b>เครื่องที่จ่าย:</b> <span style="color:#0ea5e9;">${chosenDevices.join(', ')}</span><br>
+            👤 <b>ผู้เตรียมเครื่อง:</b> ${currentAdminName}
+        `;
+        document.getElementById('status-text-' + activeJobId).innerText = 'กำลังยืมอยู่';
+        document.getElementById('status-text-' + activeJobId).style.background = '#dcfce7';
+        document.getElementById('status-text-' + activeJobId).style.color = '#15803d';
+        
+        alert(`✅ ตรวจสอบความสะอาดผ่านทุกเครื่อง! อนุมัติให้ยืมสำเร็จ ระบบจะยิงข้อความเลขอุปกรณ์ [${chosenDevices.join(' และ ')}] กลับไปหาผู้รับทาง LINE เรียบร้อยครับ`);
+        closeChecklistModal();
+    }
+
+    function handleLogout() {
+        if (liff.isLoggedIn()) { liff.logout(); }
         window.location.reload(); 
     }
 
-    function borrowItem(itemName) { alert('คุณกำลังทำรายการยืม: ' + itemName); }
-    function returnItem(itemName) { alert('คุณกำลังทำรายการคืน: ' + itemName); }
-
-    // เรียกทำงานทันทีที่เปิดเว็บ
     startLiff();
 </script>
 
