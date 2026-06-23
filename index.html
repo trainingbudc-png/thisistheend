@@ -98,29 +98,39 @@
 </div>
 
 <script>
-    // บันทึก LIFF ID ของคุณเรียบร้อยแล้ว
+// บันทึก LIFF ID ของคุณเรียบร้อยแล้ว
     const MY_LIFF_ID = '2010483649-bCj50Jvy'; 
 
-    // 1. ตรวจสอบสถานะการล็อกอินทันทีที่เปิดหน้าเว็บ
+    // 1. ตรวจสอบสถานะการล็อกอินตอน加โหลดหน้าเว็บ
     async function initLineApp() {
         try {
+            // สั่งโหลด LIFF SDK
             await liff.init({ liffId: MY_LIFF_ID });
             
+            // เช็กว่าล็อกอินหรือยัง
             if (liff.isLoggedIn()) {
-                // ดึงข้อมูลโปรไฟล์จาก LINE ทันทีถ้าระบบล็อกอินค้างไว้
+                // ถ้าล็อกอินแล้ว ค่อยไปดึงโปรไฟล์
                 const profile = await liff.getProfile();
-                // สลับหน้าจอไปที่หน้าแสดงรายการ iPad
                 showDashboard(profile.displayName, profile.pictureUrl, profile.userId);
+            } else {
+                // ถ้ายังไม่ได้ล็อกอิน ให้ระบบสแตนด์บายหน้า Login ไว้เฉยๆ ไม่ต้องทำอะไร
+                console.log("LIFF Ready, waiting for login...");
             }
         } catch (error) {
             console.error('LIFF Error:', error);
         }
     }
 
-    // 2. ฟังก์ชันเมื่อกดเข้าสู่ระบบด้วย LINE
+    // 2. ฟังก์ชันเมื่อกดเข้าสู่ระบบด้วย LINE (แก้ไขให้เรียกทำงานตรงๆ)
     function handleLineLogin() {
-        if (!liff.isLoggedIn()) {
-            liff.login();
+        try {
+            if (!liff.isLoggedIn()) {
+                liff.login(); // ตัวนี้จะเด้งไปหน้าล็อกอินของ LINE ทันที
+            } else {
+                initLineApp();
+            }
+        } catch (err) {
+            alert("เกิดข้อผิดพลาดในการเชื่อมต่อ LINE: " + err.message);
         }
     }
 
@@ -131,19 +141,17 @@
         const pass = document.getElementById('password').value;
         
         if (user === 'admin' && pass === '1234') {
-            // จำลองการข้ามหน้าสำหรับแอดมินหรือผู้ใช้ทั่วไปผ่านเว็บคอมพิวเตอร์
             showDashboard('Admin (ระบบทั่วไป)', 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', 'ไม่ได้ใช้ LINE');
         } else {
             alert('Username หรือ Password ไม่ถูกต้อง!');
         }
     }
 
-    // 4. ฟังก์ชันสำหรับสลับหน้าจอ (ซ่อนหน้า Login -> แสดงหน้า Dashboard)
+    // 4. ฟังก์ชันสำหรับสลับหน้าจอ
     function showDashboard(name, imgUrl, userId) {
         document.getElementById('login-page').style.display = 'none';
         document.getElementById('dashboard-page').style.display = 'block';
         
-        // อัปเดตข้อมูลผู้ใช้ขึ้นแสดงบน UI
         document.getElementById('u-name').innerText = name;
         document.getElementById('u-img').src = imgUrl || 'https://via.placeholder.com/60';
         document.getElementById('u-id').innerText = 'ID: ' + userId;
@@ -157,15 +165,14 @@
         window.location.reload(); 
     }
 
-    // --- ฟังก์ชันจำลองปุ่มการทำงานยืม-คืน ---
     function borrowItem(itemName) {
-        alert('คุณกำลังทำรายการยืม: ' + itemName + '\n(ขั้นตอนถัดไปคือการบันทึกลงฐานข้อมูลจริง)');
+        alert('คุณกำลังทำรายการยืม: ' + itemName);
     }
     function returnItem(itemName) {
-        alert('คุณกำลังทำรายการคืน: ' + itemName + '\n(ขั้นตอนถัดไปคือการอัปเดตสถานะในฐานข้อมูลจริง)');
+        alert('คุณกำลังทำรายการคืน: ' + itemName);
     }
 
-    // เรียกใช้งานระบบ LINE ทันทีที่เปิดหน้าเว็บ
+    // รันตอนเปิดหน้าจอ
     initLineApp();
 </script>
 
