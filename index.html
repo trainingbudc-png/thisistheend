@@ -98,52 +98,36 @@
 </div>
 
 <script>
-<script>
-    // รหัส LIFF ID ของคุณ
     const MY_LIFF_ID = '2010483649-bCj50Jvy'; 
 
-    // 1. ตรวจสอบสถานะการล็อกอินตอนโหลดหน้าเว็บ
     async function initLineApp() {
         try {
             await liff.init({ liffId: MY_LIFF_ID });
-            
             if (liff.isLoggedIn()) {
-                // ถ้าล็อกอินแล้ว ลองดึงโปรไฟล์
-                try {
-                    const profile = await liff.getProfile();
-                    showDashboard(profile.displayName, profile.pictureUrl, profile.userId);
-                } catch (profileError) {
-                    console.error('ดึงโปรไฟล์ไม่สำเร็จ แต่ล็อกอินแล้ว:', profileError);
-                    // เผื่อกรณีสิทธิ์โปรไฟล์มีปัญหา ให้เข้าหน้าแดชบอร์ดด้วย ID ไปก่อน
-                    showDashboard('ผู้ใช้งาน LINE', '', 'ดึง ID สำเร็จ');
-                }
-            } else {
-                console.log("สแตนด์บายหน้าล็อกอิน... รอผู้ใช้กดปุ่ม");
+                const profile = await liff.getProfile();
+                showDashboard(profile.displayName, profile.pictureUrl, profile.userId);
             }
         } catch (error) {
             console.error('LIFF สตาร์ทไม่สำเร็จ:', error);
         }
     }
 
-    // 2. ฟังก์ชันเมื่อกดเข้าสู่ระบบด้วย LINE
     function handleLineLogin() {
         try {
             if (!liff.isLoggedIn()) {
-                liff.login(); // ดีดไปหน้าล็อกอินของ LINE
+                liff.login();
             } else {
                 initLineApp();
             }
         } catch (err) {
-            alert("เกิดข้อผิดพลาดในการเรียก LINE Login: " + err.message);
+            alert("เกิดข้อผิดพลาด: " + err.message);
         }
     }
 
-    // 3. ฟังก์ชันล็อกอินแบบปกติ (Username / Password)
     function handleNormalLogin(event) {
         event.preventDefault();
         const user = document.getElementById('username').value;
         const pass = document.getElementById('password').value;
-        
         if (user === 'admin' && pass === '1234') {
             showDashboard('Admin (ระบบทั่วไป)', 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', 'ไม่ได้ใช้ LINE');
         } else {
@@ -151,34 +135,23 @@
         }
     }
 
-    // 4. ฟังก์ชันสำหรับสลับหน้าจอ
     function showDashboard(name, imgUrl, userId) {
         document.getElementById('login-page').style.display = 'none';
         document.getElementById('dashboard-page').style.display = 'block';
-        
         document.getElementById('u-name').innerText = name;
         document.getElementById('u-img').src = imgUrl || 'https://via.placeholder.com/60';
         document.getElementById('u-id').innerText = 'ID: ' + userId;
     }
 
-    // 5. ฟังก์ชันออกจากระบบ
     function handleLogout() {
-        if (liff.isLoggedIn()) {
-            liff.logout(); 
-        }
+        if (liff.isLoggedIn()) { liff.logout(); }
         window.location.reload(); 
     }
 
-    function borrowItem(itemName) {
-        alert('คุณกำลังทำรายการยืม: ' + itemName);
-    }
-    function returnItem(itemName) {
-        alert('คุณกำลังทำรายการคืน: ' + itemName);
-    }
+    function borrowItem(itemName) { alert('คุณกำลังทำรายการยืม: ' + itemName); }
+    function returnItem(itemName) { alert('คุณกำลังทำรายการคืน: ' + itemName); }
 
-    // เริ่มทำงานทันทีเมื่อเปิดหน้าเว็บ
     initLineApp();
-</script>
 </script>
 
 </body>
