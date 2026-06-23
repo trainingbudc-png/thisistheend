@@ -32,10 +32,11 @@
         .profile-img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #06C755; }
         .user-details { text-align: left; }
         .user-name { font-weight: bold; font-size: 18px; color: #333; }
-        .user-id { font-size: 12px; color: #777; }
+        .user-id { font-size: 12px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
         .btn-logout { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: auto; }
         
         .ipad-list { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; }
+        @media (max-width: 480px) { .ipad-list { grid-template-columns: 1fr; } }
         .ipad-item { border: 1px solid #e0e0e0; padding: 15px; border-radius: 10px; position: relative; }
         .status-badge { position: absolute; top: 15px; right: 15px; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
         .status-available { background: #e6f4ea; color: #137333; }
@@ -97,18 +98,18 @@
 </div>
 
 <script>
-    // ⚠️ อย่าลืมแก้ตรงนี้เป็น LIFF ID ของคุณจริง ๆ
+    // บันทึก LIFF ID ของคุณเรียบร้อยแล้ว
     const MY_LIFF_ID = '2010483649-bCj50Jvy'; 
 
-    // 1. ตรวจสอบการล็อกอินตอนโหลดหน้าเว็บ
+    // 1. ตรวจสอบสถานะการล็อกอินทันทีที่เปิดหน้าเว็บ
     async function initLineApp() {
         try {
             await liff.init({ liffId: MY_LIFF_ID });
             
             if (liff.isLoggedIn()) {
-                // ดึงข้อมูลโปรไฟล์จาก LINE
+                // ดึงข้อมูลโปรไฟล์จาก LINE ทันทีถ้าระบบล็อกอินค้างไว้
                 const profile = await liff.getProfile();
-                // ส่งข้อมูลเข้าฟังก์ชันข้ามหน้าจอ
+                // สลับหน้าจอไปที่หน้าแสดงรายการ iPad
                 showDashboard(profile.displayName, profile.pictureUrl, profile.userId);
             }
         } catch (error) {
@@ -130,19 +131,19 @@
         const pass = document.getElementById('password').value;
         
         if (user === 'admin' && pass === '1234') {
-            // ล็อกอินผ่านเว็บปกติ จำลองรูป Default ให้แทน
+            // จำลองการข้ามหน้าสำหรับแอดมินหรือผู้ใช้ทั่วไปผ่านเว็บคอมพิวเตอร์
             showDashboard('Admin (ระบบทั่วไป)', 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', 'ไม่ได้ใช้ LINE');
         } else {
             alert('Username หรือ Password ไม่ถูกต้อง!');
         }
     }
 
-    // 4. ฟังก์ชันสำหรับสลับหน้าจอ (ซ่อน Login -> เปิดหน้ายืมคืน)
+    // 4. ฟังก์ชันสำหรับสลับหน้าจอ (ซ่อนหน้า Login -> แสดงหน้า Dashboard)
     function showDashboard(name, imgUrl, userId) {
         document.getElementById('login-page').style.display = 'none';
         document.getElementById('dashboard-page').style.display = 'block';
         
-        // แปะข้อมูลผู้ใช้ลงบนหน้าจอ
+        // อัปเดตข้อมูลผู้ใช้ขึ้นแสดงบน UI
         document.getElementById('u-name').innerText = name;
         document.getElementById('u-img').src = imgUrl || 'https://via.placeholder.com/60';
         document.getElementById('u-id').innerText = 'ID: ' + userId;
@@ -151,20 +152,20 @@
     // 5. ฟังก์ชันออกจากระบบ
     function handleLogout() {
         if (liff.isLoggedIn()) {
-            liff.logout(); // สั่ง Logout ฝั่ง LINE
+            liff.logout(); 
         }
-        window.location.reload(); // รีเฟรชหน้าเว็บเพื่อกลับไปหน้าล็อกอิน
+        window.location.reload(); 
     }
 
-    // --- ฟังก์ชันสำหรับจำลองปุ่มยืมคืน ---
+    // --- ฟังก์ชันจำลองปุ่มการทำงานยืม-คืน ---
     function borrowItem(itemName) {
-        alert('คุณกำลังทำรายการยืม: ' + itemName + '\n(ขั้นต่อไปคือบันทึกลงฐานข้อมูลและส่งแจ้งเตือนเข้า LINE OA ครับ)');
+        alert('คุณกำลังทำรายการยืม: ' + itemName + '\n(ขั้นตอนถัดไปคือการบันทึกลงฐานข้อมูลจริง)');
     }
     function returnItem(itemName) {
-        alert('คุณกำลังทำรายการคืน: ' + itemName + '\n(ขั้นต่อไปคืออัปเดตสถานะในฐานข้อมูลครับ)');
+        alert('คุณกำลังทำรายการคืน: ' + itemName + '\n(ขั้นตอนถัดไปคือการอัปเดตสถานะในฐานข้อมูลจริง)');
     }
 
-    // รันตัวเชื่อมต่อ LINE ทุกครั้งที่เปิดหน้าจอ
+    // เรียกใช้งานระบบ LINE ทันทีที่เปิดหน้าเว็บ
     initLineApp();
 </script>
 
