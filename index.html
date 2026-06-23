@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบยืม-คืน iPad - ล็อกอิน</title>
+    <title>ระบบยืม-คืน iPad</title>
     
-    <!-- 1. ดึง LINE SDK มาใช้งาน (ห้ามลบ) -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { background-color: #f0f2f5; margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        
+        /* --- สไตล์ของหน้าจอ ล็อกอิน --- */
         .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 400px; text-align: center; }
-        h2 { margin-bottom: 28px; color: #1a1a1a; font-size: 24px; }
+        h2 { margin-top: 0; margin-bottom: 28px; color: #1a1a1a; font-size: 24px; }
         .input-group { margin-bottom: 18px; text-align: left; }
         label { display: block; margin-bottom: 8px; color: #555; font-size: 14px; font-weight: 600; }
         input { width: 100%; padding: 12px 16px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 16px; outline: none; transition: 0.2s; }
@@ -24,14 +25,31 @@
         .btn-line { width: 100%; padding: 14px; background-color: #06C755; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
         .btn-line:hover { background-color: #05b04b; }
         .line-icon { width: 20px; height: 20px; fill: white; }
+
+        /* --- สไตล์ของหน้าจอหลัก ยืม-คืน (หลังล็อกอินสำเร็จ) --- */
+        .dashboard-card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 600px; display: none; }
+        .user-profile { display: flex; align-items: center; gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+        .profile-img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #06C755; }
+        .user-details { text-align: left; }
+        .user-name { font-weight: bold; font-size: 18px; color: #333; }
+        .user-id { font-size: 12px; color: #777; }
+        .btn-logout { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: auto; }
+        
+        .ipad-list { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; }
+        .ipad-item { border: 1px solid #e0e0e0; padding: 15px; border-radius: 10px; position: relative; }
+        .status-badge { position: absolute; top: 15px; right: 15px; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        .status-available { background: #e6f4ea; color: #137333; }
+        .status-borrowed { background: #fce8e6; color: #c5221f; }
+        .btn-action { width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .btn-borrow { background: #28a745; color: white; }
+        .btn-return { background: #ffc107; color: #333; }
     </style>
 </head>
 <body>
 
-<div class="login-card">
+<div class="login-card" id="login-page">
     <h2>ระบบยืม-คืน iPad</h2>
     
-    <!-- ฟอร์มล็อกอินแบบปกติ (Username / Password) -->
     <form id="loginForm" onsubmit="handleNormalLogin(event)">
         <div class="input-group">
             <label for="username">ชื่อผู้ใช้งาน (Username)</label>
@@ -46,59 +64,107 @@
 
     <div class="divider">หรือ</div>
 
-    <!-- ปุ่มล็อกอินด้วย LINE -->
     <button class="btn-line" onclick="handleLineLogin()">
-        <!-- ไอคอน LINE แบบ SVG -->
-        <svg class="line-icon" viewBox="0 0 24 24"><path d="M24 10.304c0-5.131-5.383-9.304-12-9.304s-12 4.173-12 9.304c0 4.594 4.305 8.435 10.119 9.18 0.394 0.085 0.932 0.261 1.066 0.6l0.383 1.644c0.116 0.501 0.45 0.434 0.45 0.434s0.413-0.279 0.443-0.453c0.068-0.39 0.438-2.519 0.438-2.519 1.226-0.12 2.39-0.443 3.447-0.954 3.013-1.455 5.654-4.52 5.654-8.936zm-15.54 2.871h-1.96c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.596 0.268 0.596 0.596v3.974h1.364c0.33 0 0.597 0.268 0.597 0.597 0 0.328-0.267 0.596-0.597 0.596zm3.398-0.597c0 0.329-0.268 0.597-0.597 0.597s-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.597 0.268 0.597 0.596v4.57zm5.228 0c0 0.161-0.064 0.315-0.178 0.428-0.113 0.113-0.268 0.169-0.419 0.169h-1.96c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.596 0.268 0.596 0.596v3.974h1.364c0.33 0 0.597 0.268 0.597 0.597zm3.328-1.558c0 0.329-0.268 0.596-0.597 0.596h-1.364v1.01h1.364c0.33 0 0.597 0.268 0.597 0.597s-0.268 0.597-0.597 0.597h-1.961c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596h1.961c0.33 0 0.597 0.268 0.597 0.596s-0.268 0.597-0.597 0.597h-1.364v0.965h1.364c0.33 0 0.597 0.268 0.597 0.596z"/></svg>
+        <svg class="line-icon" viewBox="0 0 24 24"><path d="M24 10.304c0-5.131-5.383-9.304-12-9.304s-12 4.173-12 9.304c0 4.594 4.305 8.435 10.119 9.18 0.394 0.085 0.932 0.261 1.066 0.6l0.383 1.644c0.116 0.501 0.45 0.434 0.45 0.434s0.413-0.279 0.443-0.453c0.068-0.39 0.438-2.519 0.438-2.519 1.226-0.12 2.39-0.443 3.447-0.954 3.013-1.455 5.654-4.52 5.654-8.936zm-15.54 2.871h-1.96c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.596 0.268 0.596 0.596v3.974h1.364c0.33 0 0.597 0.268 0.597 0.597 0 0.328-0.267 0.596-0.597 0.596zm3.398-0.597c0 0.329-0.268 0.597-0.597 0.597s-0.268-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.597 0.268 0.597 0.596v4.57zm5.228 0c0 0.161-0.064 0.315-0.178 0.428-0.113 0.113-0.268 0.169-0.419 0.169h-1.96c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596s0.596 0.268 0.596 0.596v3.974h1.364c0.33 0 0.597 0.268 0.597 0.597zm3.328-1.558c0 0.329-0.268 0.596-0.597 0.596h-1.364v1.01h1.364c0.33 0 0.597 0.268 0.597 0.597s-0.268 0.597-0.597 0.597h-1.961c-0.329 0-0.596-0.268-0.596-0.597v-4.57c0-0.329 0.268-0.596 0.596-0.596h1.961c0.33 0 0.597 0.268 0.597 0.596s-0.268 0.597-0.597 0.597h-1.364v0.965h1.364c0.33 0 0.597 0.268 0.597 0.596z"/></svg>
         เข้าสู่ระบบด้วย LINE
     </button>
 </div>
 
+<div class="dashboard-card" id="dashboard-page">
+    <div class="user-profile">
+        <img id="u-img" class="profile-img" src="https://via.placeholder.com/60" alt="User Image">
+        <div class="user-details">
+            <div class="user-name" id="u-name">ผู้ใช้งานทั่วไป</div>
+            <div class="user-id" id="u-id">LINE ID: -</div>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">ออกจากระบบ</button>
+    </div>
+
+    <h3>รายการ iPad ในระบบ</h3>
+    
+    <div class="ipad-list">
+        <div class="ipad-item">
+            <strong>iPad Air 5 (เครื่องที่ 1)</strong>
+            <div class="status-badge status-available">ว่าง</div>
+            <button class="btn-action btn-borrow" onclick="borrowItem('เครื่องที่ 1')">กดคลิกยืม</button>
+        </div>
+        <div class="ipad-item">
+            <strong>iPad Pro (เครื่องที่ 2)</strong>
+            <div class="status-badge status-borrowed">ถูกยืมแล้ว</div>
+            <button class="btn-action btn-return" onclick="returnItem('เครื่องที่ 2')">กดคลิกคืน</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // ⚠️ สำคัญมาก: เปลี่ยนคำว่างตรงนี้เป็น LIFF ID ของคุณที่ก๊อปมาจาก LINE Developers
+    // ⚠️ อย่าลืมแก้ตรงนี้เป็น LIFF ID ของคุณจริง ๆ
     const MY_LIFF_ID = '2010483649-bCj50Jvy'; 
 
-    // ฟังก์ชันเริ่มการทำงานของ LINE LIFF
+    // 1. ตรวจสอบการล็อกอินตอนโหลดหน้าเว็บ
     async function initLineApp() {
         try {
             await liff.init({ liffId: MY_LIFF_ID });
             
-            // เช็กว่าผู้ใช้ล็อกอินค้างไว้ หรือเพิ่งกดยอมรับสิทธิ์ล็อกอินเข้ามาไหม
             if (liff.isLoggedIn()) {
+                // ดึงข้อมูลโปรไฟล์จาก LINE
                 const profile = await liff.getProfile();
-                
-                // จำลองว่าล็อกอินผ่าน LINE สำเร็จ (จะแสดงชื่อผู้ใช้จาก LINE)
-                alert('ล็อกอินผ่าน LINE สำเร็จ! ยินดีต้อนรับคุณ: ' + profile.displayName);
-                
-                // พักตรงนี้ไว้ก่อน (เดี๋ยวขั้นตอนถัดไปจะพาทำหน้าดึงประวัติ/หน้ายืมคืน)
+                // ส่งข้อมูลเข้าฟังก์ชันข้ามหน้าจอ
+                showDashboard(profile.displayName, profile.pictureUrl, profile.userId);
             }
         } catch (error) {
             console.error('LIFF Error:', error);
         }
     }
 
-    // เมื่อกดปุ่ม LINE Login
+    // 2. ฟังก์ชันเมื่อกดเข้าสู่ระบบด้วย LINE
     function handleLineLogin() {
         if (!liff.isLoggedIn()) {
-            liff.login(); // คำสั่งของ LINE เพื่อเด้งไปหน้าจอขอสิทธิ์ล็อกอิน
+            liff.login();
         }
     }
 
-    // เมื่อกดปุ่มล็อกอินแบบปกติ (Username/Password)
+    // 3. ฟังก์ชันล็อกอินแบบปกติ (Username / Password)
     function handleNormalLogin(event) {
-        event.preventDefault(); // กันไม่ให้หน้าเว็บรีเฟรชเอง
+        event.preventDefault();
         const user = document.getElementById('username').value;
         const pass = document.getElementById('password').value;
         
-        // ทดสอบล็อกอินแบบง่ายๆ ก่อน (เดี๋ยวค่อยเชื่อมฐานข้อมูลจริงในอนาคต)
         if (user === 'admin' && pass === '1234') {
-            alert('ล็อกอินระบบทั่วไปสำเร็จ! ยินดีต้อนรับ Admin');
+            // ล็อกอินผ่านเว็บปกติ จำลองรูป Default ให้แทน
+            showDashboard('Admin (ระบบทั่วไป)', 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', 'ไม่ได้ใช้ LINE');
         } else {
             alert('Username หรือ Password ไม่ถูกต้อง!');
         }
     }
 
-    // รันฟังก์ชันเพื่อเตรียมระบบ LINE ทันทีที่เปิดหน้าเว็บ
+    // 4. ฟังก์ชันสำหรับสลับหน้าจอ (ซ่อน Login -> เปิดหน้ายืมคืน)
+    function showDashboard(name, imgUrl, userId) {
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('dashboard-page').style.display = 'block';
+        
+        // แปะข้อมูลผู้ใช้ลงบนหน้าจอ
+        document.getElementById('u-name').innerText = name;
+        document.getElementById('u-img').src = imgUrl || 'https://via.placeholder.com/60';
+        document.getElementById('u-id').innerText = 'ID: ' + userId;
+    }
+
+    // 5. ฟังก์ชันออกจากระบบ
+    function handleLogout() {
+        if (liff.isLoggedIn()) {
+            liff.logout(); // สั่ง Logout ฝั่ง LINE
+        }
+        window.location.reload(); // รีเฟรชหน้าเว็บเพื่อกลับไปหน้าล็อกอิน
+    }
+
+    // --- ฟังก์ชันสำหรับจำลองปุ่มยืมคืน ---
+    function borrowItem(itemName) {
+        alert('คุณกำลังทำรายการยืม: ' + itemName + '\n(ขั้นต่อไปคือบันทึกลงฐานข้อมูลและส่งแจ้งเตือนเข้า LINE OA ครับ)');
+    }
+    function returnItem(itemName) {
+        alert('คุณกำลังทำรายการคืน: ' + itemName + '\n(ขั้นต่อไปคืออัปเดตสถานะในฐานข้อมูลครับ)');
+    }
+
+    // รันตัวเชื่อมต่อ LINE ทุกครั้งที่เปิดหน้าจอ
     initLineApp();
 </script>
 
