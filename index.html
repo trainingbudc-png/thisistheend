@@ -64,6 +64,7 @@
         .btn-modal-confirm { width: 100%; padding: 12px; background: #06C755; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 10px; box-shadow: 0 4px 10px rgba(6, 199, 85, 0.2); }
         .btn-modal-confirm:hover { background: #05b04b; }
         .btn-modal-close { width: 100%; padding: 10px; background: #cbd5e1; color: #334155; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; margin-top: 8px; }
+        .loading { font-style: italic; color: #64748b; }
     </style>
 </head>
 <body>
@@ -148,7 +149,7 @@
                     <label style="margin-bottom: 0; cursor: pointer;" for="is_outsider">คนนอกยืม</label>
                 </div>
             </div>
-            <button type="submit" class="btn-action-submit">
+            <button type="submit" class="btn-action-submit" id="btn-submit-text">
                 <svg style="width:20px;height:20px" viewBox="0 0 24 24"><path fill="currentColor" d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z" /></svg>
                 ขอเบิก
             </button>
@@ -163,36 +164,17 @@
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th style="width: 8%;">#</th>
-                    <th style="width: 35%;">รายการขอยืม</th>
-                    <th style="width: 20%;">ช่วงเวลาที่ขอใช้</th>
-                    <th style="width: 20%;">ผู้ยืม/บันทึก</th>
-                    <th style="width: 17%;">สถานะ</th>
+                    <th style="width: 12%;">เลขคำขอ</th>
+                    <th style="width: 31%;">รายการขอยืม</th>
+                    <th style="width: 22%;">ช่วงเวลาที่ขอใช้</th>
+                    <th style="width: 20%;">ผู้ยืม</th>
+                    <th style="width: 15%;">สถานะ</th>
                     <th style="width: 15%;">จัดการ</th>
                 </tr>
             </thead>
             <tbody id="admin-table-body">
-                <!-- รายการจำลองข้อมูลทดสอบเหมือนในรูปตัวอย่าง -->
                 <tr>
-                    <td style="font-weight: bold; color:#0ea5e9;">6159</td>
-                    <td>
-                        <strong>Apple Pencil <span style="background:#ef4444; color:white; font-size:11px; padding:2px 6px; border-radius:4px;">x2</span></strong><br>
-                        <span style="color:#64748b; font-size:12px;">รายละเอียด: สอบ mcq</span><br>
-                        <div id="assigned-device-6159" style="margin-top:8px; background: #f0fdf4; border-radius:6px; padding: 4px; font-weight:bold; color:#10b981; font-size:12px;"></div>
-                    </td>
-                    <td>
-                        📅 ใช้: 26 มิ.ย. 2569<br>
-                        🔄 คืน: 26 มิ.ย. 2569
-                    </td>
-                    <td>
-                        <strong>พรรณนิภา แก่นมณี</strong><br>
-                        <span style="color:#94a3b8; font-size:11px;">23 มิ.ย. 2569 13:06 น.</span>
-                    </td>
-                    <td><span class="badge-status" id="status-text-6159">รอรับของ</span></td>
-                    <td>
-                        <button class="btn-prepare" onclick="openChecklistModal('6159', 'พรรณนิภา แก่นมณี', 'Apple Pencil', 2)">[เตรียมอุปกรณ์]</button>
-                        <button class="btn-reject" onclick="alert('ปฏิเสธคำขอเรียบร้อย')">ปฏิเสธ</button>
-                    </td>
+                    <td colspan="6" class="loading" style="text-align: center;">กำลังโหลดข้อมูลคำขอจาก Google Sheets...</td>
                 </tr>
             </tbody>
         </table>
@@ -211,15 +193,20 @@
         <!-- พื้นที่สำหรับสร้างกล่องเช็กลิสต์แยกรายเครื่องอัตโนมัติด้วย JavaScript -->
         <div id="dynamic-checklist-container"></div>
 
-        <button class="btn-modal-confirm" onclick="confirmAndGiveItem()">ยืนยันความพร้อมและ [ให้ยืม]</button>
+        <button class="btn-modal-confirm" id="btn-modal-confirm-id" onclick="confirmAndGiveItem()">ยืนยันความพร้อมและ [ให้ยืม]</button>
         <button class="btn-modal-close" onclick="closeChecklistModal()">ยกเลิก</button>
     </div>
 </div>
 
 <script>
+    // สัญญาณเชื่อมต่อหลังบ้าน Google Sheets ของคุณ Nutta
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzIEwJlDgjMkTghpI61JZCRnLzgD6PhFLzQgBzFYK4SLIwkoOyvH2cBmAklGfrke6QCOw/exec';
     const MY_LIFF_ID = '2010484951-KHRdqAgy'; 
+    
     let currentAdminName = ''; 
     let activeJobId = '';
+    let globalUserName = 'ผู้ใช้งานทั่วไป';
+    let globalLineId = 'LINE_NOT_LOGGED_IN';
 
     // เริ่มต้นระบบตรวจสอบ LINE LIFF
     async function startLiff() {
@@ -227,6 +214,8 @@
             await liff.init({ liffId: MY_LIFF_ID });
             if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
+                globalUserName = profile.displayName;
+                globalLineId = profile.userId;
                 showDashboard(profile.displayName, profile.pictureUrl, profile.userId, 'user');
             }
         } catch (error) {
@@ -245,8 +234,9 @@
         const pass = document.getElementById('password').value;
         
         if (user === 'admin' && pass === '1234') {
-            currentAdminName = 'แอดมินศูนย์แพทย์ฯ (Admin)';
+            currentAdminName = 'แอดมินศูนย์แพทย์ฯ';
             showDashboard(currentAdminName, 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', 'SYSTEM_ADMIN_ACCOUNT', 'admin');
+            loadAdminData(); // โดดไปดึงข้อมูลจากชีตทันที
         } else {
             alert('Username หรือ Password ไม่ถูกต้อง!');
         }
@@ -274,30 +264,112 @@
         }
     }
 
-    // ผู้ยืมส่งฟอร์มขอเบิก
-    function submitBorrowRequest(event) {
+    // [สเต็ปผู้ยืม] ยื่นคำขอส่งเข้า Google Sheets
+    async function submitBorrowRequest(event) {
         event.preventDefault();
-        alert('ส่งคำขอเบิกอุปกรณ์เข้าสู่ระบบสำเร็จ! (ขั้นต่อไปข้อมูลนี้จะวิ่งไปที่ฐานข้อมูลของคุณ)');
-        document.getElementById('borrowForm').reset();
+        const btn = document.getElementById('btn-submit-text');
+        btn.innerText = '⏳ กำลังส่งคำขอ...';
+        btn.disabled = true;
+
+        const payload = {
+            action: 'create_request',
+            user_name: globalUserName,
+            line_id: globalLineId,
+            device_type: document.getElementById('device_type').value,
+            qty: parseInt(document.getElementById('borrow_qty').value),
+            start_date: document.getElementById('start_date').value,
+            end_date: document.getElementById('end_date').value,
+            detail: document.getElementById('borrow_detail').value,
+            is_outsider: document.getElementById('is_outsider').checked ? 'ใช่' : 'ไม่ใช่'
+        };
+
+        try {
+            const response = await fetch(BACKEND_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const resData = await response.json();
+            if(resData.status === 'success') {
+                alert(`🎉 ส่งคำขอสำเร็จแล้ว! เลขคำขอของคุณคือ: ${resData.jobId}`);
+                document.getElementById('borrowForm').reset();
+            } else {
+                alert('เกิดข้อผิดพลาด: ' + resData.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('ไม่สามารถเชื่อมต่อฐานข้อมูลได้ในขณะนี้');
+        } finally {
+            btn.innerHTML = `<svg style="width:20px;height:20px" viewBox="0 0 24 24"><path fill="currentColor" d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z" /></svg> ขอเบิก`;
+            btn.disabled = false;
+        }
+    }
+
+    // [สเต็ปแอดมิน] ดึงประวัติคำขอจาก Google Sheets มาจัดลงตาราง
+    async function loadAdminData() {
+        const tbody = document.getElementById('admin-table-body');
+        try {
+            const response = await fetch(BACKEND_URL);
+            const data = await response.json();
+            
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ยังไม่มีรายการคำขอยืมในระบบ</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = ''; // ล้างข้อความโหลด
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                // แปลงฟอร์แมตวันที่แบบให้อ่านง่าย
+                const sDate = row.Start_Date ? row.Start_Date.split('T')[0] : '-';
+                const eDate = row.End_Date ? row.End_Date.split('T')[0] : '-';
+                
+                // คุมสไตล์ปุ่มและการเปิดปิดตามสถานะ
+                let actionBtn = '';
+                let assignedText = row.Assigned_Devices ? `<div style="margin-top:8px; background: #f0fdf4; border-radius:6px; padding: 4px; font-weight:bold; color:#10b981; font-size:12px;">📌 เครื่องที่จ่าย: ${row.Assigned_Devices}</div>` : '';
+                
+                if (row.Status === "1. รอแอดมินเตรียมเครื่อง") {
+                    actionBtn = `<button class="btn-prepare" onclick="openChecklistModal('${row.Job_ID}', '${row.User_Name}', '${row.Device_Type}', ${row.Qty})">[เตรียมอุปกรณ์]</button>`;
+                } else {
+                    actionBtn = `<span style="color:#64748b; font-size:12px;">แอดมินตรวจแล้ว</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td style="font-weight: bold; color:#0ea5e9;">${row.Job_ID}</td>
+                    <td>
+                        <strong>${row.Device_Type} <span style="background:#0ea5e9; color:white; font-size:11px; padding:2px 6px; border-radius:4px;">x${row.Qty}</span></strong><br>
+                        <span style="color:#64748b; font-size:12px;">รายละเอียด: ${row.Detail}</span><br>
+                        <span style="font-size:11px; background:#f1f5f9; padding:2px 4px; border-radius:4px;">คนนอก: ${row.Is_Outsider}</span>
+                        ${assignedText}
+                    </td>
+                    <td>📅 ใช้: ${sDate}<br>🔄 คืน: ${eDate}</td>
+                    <td><strong>${row.User_Name}</strong></td>
+                    <td><span class="badge-status">${row.Status}</span></td>
+                    <td>${actionBtn}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">โหลดข้อมูลล้มเหลว กรุณารีเฟรชหน้าจออีกครั้ง</td></tr>';
+            console.error(err);
+        }
     }
 
     // --- ฟังก์ชันเปิดหน้าเช็กลิสต์อุปกรณ์แยกรายชิ้น [ฝั่งแอดมิน] ---
     function openChecklistModal(jobId, userName, deviceName, qty) {
         activeJobId = jobId;
-        document.getElementById('md-job-id').innerText = '#' + jobId;
+        document.getElementById('md-job-id').innerText = jobId;
         document.getElementById('md-admin-name').innerText = currentAdminName || 'แอดมินระบบ';
         document.getElementById('md-user-name').innerText = userName;
         
         const container = document.getElementById('dynamic-checklist-container');
         container.innerHTML = ''; // ล้างค่าเก่า
         
-        // วนลูปสร้างกล่องเช็กลิสต์แยกทีละชิ้นตามจำนวนจริง (qty)
         for (let i = 1; i <= qty; i++) {
             const itemBox = document.createElement('div');
             itemBox.className = 'checklist-group';
             itemBox.style.borderLeft = '4px solid #0ea5e9';
             
-            // ปรับ Dropdown ให้สอดคล้องกับประเภทของที่ยืม
             let optionsHtml = '';
             if (deviceName.includes('Pencil')) {
                 optionsHtml = `
@@ -338,13 +410,13 @@
         document.getElementById('checklist-modal').style.display = 'none';
     }
 
-    // แอดมินกดยืนยันการเช็กเครื่องทั้งหมดและอนุมัติปล่อยเครื่อง
-    function confirmAndGiveItem() {
+    // [List ที่ 1: แอดมินทำ] กดยืนยันการเช็กเครื่องทั้งหมดและอัปเดตลง Google Sheets
+    async function confirmAndGiveItem() {
         const container = document.getElementById('dynamic-checklist-container');
         const qty = parseInt(container.getAttribute('data-qty'));
-        let chosenDevices = [];
+        const btnConfirm = document.getElementById('btn-modal-confirm-id');
         
-        // วนเช็กCheckbox ทุกเครื่องว่าติ๊กครบไหม
+        // วนเช็ก Checkbox ทุกเครื่องว่าติ๊กครบไหม
         for (let i = 1; i <= qty; i++) {
             const checkboxes = document.querySelectorAll(`.chk-clear-${i}`);
             let allChecked = true;
@@ -356,21 +428,43 @@
             }
         }
         
-        // เก็บรวบรวมเลขอุปกรณ์ที่แอดมินเลือก
+        btnConfirm.innerText = '⏳ กำลังบันทึกข้อมูล...';
+        btnConfirm.disabled = true;
+
+        // เก็บรวบรวมเลขอุปกรณ์ที่แอดมินเลือกสุ่มหรือเลือกไว้
+        let chosenDevices = [];
         const selects = document.querySelectorAll('.md-device-select-item');
         selects.forEach(sel => chosenDevices.push(sel.value));
         
-        // อัปเดตตารางสรุปผลหน้าบ้านแอดมิน
-        document.getElementById('assigned-device-' + activeJobId).innerHTML = `
-            📌 <b>เครื่องที่จ่าย:</b> <span style="color:#0ea5e9;">${chosenDevices.join(', ')}</span><br>
-            👤 <b>ผู้เตรียมเครื่อง:</b> ${currentAdminName}
-        `;
-        document.getElementById('status-text-' + activeJobId).innerText = 'กำลังยืมอยู่';
-        document.getElementById('status-text-' + activeJobId).style.background = '#dcfce7';
-        document.getElementById('status-text-' + activeJobId).style.color = '#15803d';
-        
-        alert(`✅ ตรวจสอบความสะอาดผ่านทุกเครื่อง! อนุมัติให้ยืมสำเร็จ ระบบจะยิงข้อความเลขอุปกรณ์ [${chosenDevices.join(' และ ')}] กลับไปหาผู้รับทาง LINE เรียบร้อยครับ`);
-        closeChecklistModal();
+        const payload = {
+            action: 'update_checklist',
+            job_id: activeJobId,
+            step: 1,
+            admin_name: currentAdminName,
+            assigned_devices: chosenDevices.join(', ')
+        };
+
+        try {
+            const response = await fetch(BACKEND_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const resData = await response.json();
+            
+            if (resData.status === 'success') {
+                alert(`✅ บันทึก List ที่ 1 (แอดมินเตรียมเครื่อง) เรียบร้อย! ระบบจะขยับสถานะเป็นขั้นตอนที่ 2 ต่อไปครับ`);
+                closeChecklistModal();
+                loadAdminData(); // โหลดตารางใหม่เพื่ออัปเดตหน้าตา
+            } else {
+                alert('เกิดข้อผิดพลาดในการบันทึก: ' + resData.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('ไม่สามารถเชื่อมต่อฐานข้อมูลเพื่อบันทึกสถานะได้');
+        } finally {
+            btnConfirm.innerText = 'ยืนยันความพร้อมและ [ให้ยืม]';
+            btnConfirm.disabled = false;
+        }
     }
 
     function handleLogout() {
